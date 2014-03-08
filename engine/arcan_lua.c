@@ -1536,7 +1536,7 @@ static bool is_special_res(const char* msg)
 static int setupavstream(lua_State* ctx)
 {
 	LUA_TRACE("launch_avfeed");
-	const char* argstr = luaL_optstring(ctx, 1, NULL);
+	const char* argstr = luaL_optstring(ctx, 1, "");
 	uintptr_t ref = 0;
 	int cbofs = 2;
 

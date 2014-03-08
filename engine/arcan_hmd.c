@@ -11,6 +11,15 @@
 
 #include <hidapi/hidapi.h>
 
+/*
+ * Incomplete, from experimentation with an occulus
+ * rift HMD -- the whole "low-latency orientation
+ * tracking" with correcting drift through 
+ * magfield + gyro + accel. thing should be done
+ * in a way that it can just be retrofitted to 
+ * other sensor rich devices (i.e. android HAL)
+ */
+
 static const int RIFT_VID = 0x2833;
 static const int RIFT_PID = 0x0001;
 
