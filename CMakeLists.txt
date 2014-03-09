@@ -81,6 +81,13 @@ set (STDLIB
 )
 
 #
+# Added to COMPILE_DEFINITIONS property when arcan target has been properly defined
+# currently only used for SDLImage support (which hopefully won't be needed for long)
+#
+set (MAIN_DEFINITIONS
+)
+
+#
 # Incomplete, major workarounds need to be added for all external deps. etc. 
 # to build without linking in all the glibc filth
 #
@@ -181,7 +188,7 @@ if (NOT VIDEO_PLATFORM OR VIDEO_PLATFORM STREQUAL "sdl")
 		message("--> SDL_Image found, adding") 
 		list(APPEND MAIN_LIBRARIES ${SDLIMAGE_LIBRARY})
 		list(APPEND INCLUDE_DIRS ${SDLIMAGE_INCLUDE_DIR})
-		add_definitions(-DSDLIMAGE)
+		list(APPEND MAIN_DEFINITIONS SDLIMAGE)
 	endif(${SDLIMAGE_FOUND}) 
 endif()
 
@@ -389,9 +396,20 @@ endif()
 #
 set (AVFEED_SOURCES
 	frameserver/avfeed.c
+	engine/arcan_ttf.c
+	engine/arcan_ttf.h
+	engine/arcan_renderfun.c
+	engine/arcan_renderfun.h
+	engine/arcan_img.c	
+	platform/posix/paths.c
+	platform/posix/map_resource.c
+	platform/posix/strip_traverse.c
+	platform/posix/resource_io.c
 )
 
 set (AVFEED_LIBS
+	${PNG_LIBRARIES}
+	${FREETYPE_LIBRARY}
 	util
 )
 
@@ -469,6 +487,7 @@ else()
 endif()
 
 message("\n---- Stage 3, Linking / Packaging ----")
+set_property(TARGET arcan APPEND PROPERTY COMPILE_DEFINITIONS ${MAIN_DEFINITIONS})
 target_link_libraries( arcan ${STDLIB} ${MAIN_LIBRARIES} )
 target_link_libraries( arcan_frameserver ${STDLIB} ${FSRV_LIBRARIES} )
 
