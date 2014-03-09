@@ -34,12 +34,13 @@
 #define ARCAN_FONT_CACHE_LIMIT 8
 #endif
 
-#include GL_HEADERS
+#ifndef GL_PIXEL_BPP
+#define GL_PIXEL_BPP 4
+#endif
 
 #include "arcan_math.h"
-#include "arcan_general.h"
-#include "arcan_video.h"
-#include "arcan_videoint.h"
+#include "arcan_general.h" 
+#include "arcan_renderfun.h"
 #include "arcan_ttf.h"
 #include "arcan_img.h"
 
@@ -74,6 +75,9 @@ struct font_entry {
 static struct text_format last_style = {
 	.col = {.r = 0xff, .g = 0xff, .b = 0xff}
 };
+
+int stretchblit(char* src, int inw, int inh, 
+	uint32_t* dst, int dstw, int dsth, int flipy);
 
 static unsigned int font_cache_size = ARCAN_FONT_CACHE_LIMIT;
 static struct font_entry font_cache[ARCAN_FONT_CACHE_LIMIT] = {0};
@@ -151,7 +155,7 @@ static TTF_Font* grab_font(const char* fname, uint8_t size)
 	return font;
 }
 
-void arcan_video_reset_fontcache()
+void arcan_renderfun_reset_fontcache()
 {
 	for (int i = 0; i < ARCAN_FONT_CACHE_LIMIT; i++)
 		if (font_cache[i].data){
@@ -169,7 +173,7 @@ void arcan_video_reset_fontcache()
 #define TEXT_EMBEDDEDICON_MAXH 256
 #endif
 
-TTF_Surface* text_loadimage(const char* const infn, img_cons cons)
+static TTF_Surface* text_loadimage(const char* const infn, img_cons cons)
 {
 	char* path = arcan_find_resource(infn, 
 		ARCAN_RESOURCE_SHARED | ARCAN_RESOURCE_THEME);
@@ -210,7 +214,8 @@ TTF_Surface* text_loadimage(const char* const infn, img_cons cons)
 		
 		if ((cons.w != 0 && cons.h != 0) && (inw != cons.w || inh != cons.h)){
 			uint32_t* scalebuf = malloc(cons.w * cons.h * GL_PIXEL_BPP);
-			stretchblit(imgbuf, inw, inh, scalebuf, cons.w, cons.h, false); 
+			arcan_renderfun_stretchblit(imgbuf, inw, inh, 
+				scalebuf, cons.w, cons.h, false); 
 			free(imgbuf);
 			res->width  = cons.w;
 			res->height = cons.h;
@@ -417,11 +422,6 @@ static struct text_format formatend(char* base, struct text_format prev,
 /* out of formatstring */
 		if (*base != '\\') { prev.endofs = base; break; }
 
-/* all the supported formatting characters;
- * b = bold, i = italic, u = underline, n = newline, r = carriage return,
- * t = tab ! = inverse (bold,italic,underline), #rrggbb = setcolor, 
- * fpath,size = setfont, Pwidth,height,fname(, or NULL) extract 
- * pwidth,height = embedd image (width, height optional) */
 	char cmd;
 
 retry:
@@ -648,7 +648,7 @@ static unsigned int get_tabofs(int offset, int tabc, int8_t tab_spacing,
 	return offset;
 }
 
-void arcan_video_stringdimensions(const char* message, int8_t line_spacing, 
+void arcan_renderfun_stringdimensions(const char* message, int8_t line_spacing, 
 	int8_t tab_spacing, unsigned* tabs, unsigned* maxw, unsigned* maxh)
 {
 	if (!message)
@@ -721,7 +721,7 @@ static inline void copy_rect(TTF_Surface* surf, uint32_t* dst,
 			&wrk[row * surf->width], surf->width * 4);
 }
 	
-void* renderfun_renderfmtstr(const char* message,
+void* arcan_renderfun_renderfmtstr(const char* message,
 	int8_t line_spacing, int8_t tab_spacing, unsigned int* tabs, bool pot,
 	unsigned int* n_lines, unsigned int** lineheights,
 	unsigned short* dw, unsigned short * dh, uint32_t* d_sz, 
@@ -885,7 +885,7 @@ typedef struct tColorY {
 	uint8_t y;
 } tColorY;
 
-int stretchblit(char* src, int inw, int inh, 
+int arcan_renderfun_stretchblit(char* src, int inw, int inh, 
 	uint32_t* dst, int dstw, int dsth, int flipy)
 {
 	int x, y, sx, sy, ssx, ssy, *sax, *say, *csax, *csay, *salast;

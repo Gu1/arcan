@@ -55,6 +55,7 @@
 #include "arcan_math.h"
 #include "arcan_general.h"
 #include "arcan_video.h"
+#include "arcan_renderfun.h"
 #include "arcan_videoint.h"
 #include "arcan_shdrmgmt.h"
 #include "arcan_3dbase.h"
@@ -1068,7 +1069,7 @@ static int strsize(lua_State* ctx)
 	int vspacing = luaL_optint(ctx, 2, 4);
 	int tspacing = luaL_optint(ctx, 2, 64);
 
-	arcan_video_stringdimensions(message, vspacing, tspacing, NULL, 
+	arcan_renderfun_stringdimensions(message, vspacing, tspacing, NULL, 
 		&width, &height);
 
 	lua_pushnumber(ctx, width);

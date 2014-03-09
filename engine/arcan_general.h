@@ -81,6 +81,14 @@ enum arcan_errors {
 	ARCAN_ERRC_UNSUPPORTED_FORMAT  = -12
 };
 
+static inline uint16_t nexthigher(uint16_t k)
+{
+	k--;
+	for (int i=1; i < sizeof(uint16_t) * 8; i = i * 2)
+		k = k | k >> i;
+	return k+1;
+}
+
 typedef struct {
 	float yaw, pitch, roll;
 	quat quaternion;

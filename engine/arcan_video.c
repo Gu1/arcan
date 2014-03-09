@@ -53,6 +53,7 @@
 #include "arcan_ttf.h"
 #include "arcan_audio.h"
 #include "arcan_event.h"
+#include "arcan_renderfun.h"
 #include "arcan_framequeue.h"
 #include "arcan_frameserver_backend.h"
 #include "arcan_target_launcher.h"
@@ -1251,14 +1252,6 @@ uint16_t arcan_video_screenh()
 	return arcan_video_display.height;
 }
 
-uint16_t nexthigher(uint16_t k)
-{
-	k--;
-	for (int i=1; i < sizeof(uint16_t) * 8; i = i * 2)
-		k = k | k >> i;
-	return k+1;
-}
-
 arcan_errc arcan_video_getimage(const char* fname, arcan_vobject* dst, 
 	img_cons forced, bool asynchsrc)
 {
@@ -1334,7 +1327,8 @@ arcan_errc arcan_video_getimage(const char* fname, arcan_vobject* dst,
 
 			dstframe->vinf.text.s_raw = neww * newh * GL_PIXEL_BPP;
 			dstframe->vinf.text.raw   = malloc(dstframe->vinf.text.s_raw); 
-			stretchblit(imgbuf, inw, inh, (uint32_t*) dstframe->vinf.text.raw, 
+			arcan_renderfun_stretchblit(imgbuf, inw, inh, 
+				(uint32_t*) dstframe->vinf.text.raw, 
 				neww, newh, dst->vstore->imageproc == imageproc_fliph);
 			free(imgbuf);
 		}
@@ -1345,7 +1339,8 @@ arcan_errc arcan_video_getimage(const char* fname, arcan_vobject* dst,
 			if (neww != inw || newh != inh){
 				dstframe->vinf.text.s_raw = neww * newh * GL_PIXEL_BPP;
 				dstframe->vinf.text.raw = malloc(dstframe->vinf.text.s_raw);
-				stretchblit(imgbuf, inw, inh, (uint32_t*) dstframe->vinf.text.raw, 
+				arcan_renderfun_stretchblit(imgbuf, inw, inh, 
+					(uint32_t*) dstframe->vinf.text.raw, 
 					neww, newh, dst->vstore->imageproc == imageproc_fliph);
 				free(imgbuf);
 			} 
@@ -4592,7 +4587,7 @@ void arcan_video_shutdown()
 
 	arcan_shader_flush();
 	deallocate_gl_context(current_context, true);
-	arcan_video_reset_fontcache();
+	arcan_renderfun_reset_fontcache();
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 	platform_video_shutdown();
@@ -4646,7 +4641,7 @@ arcan_vobj_id arcan_video_renderstring(const char* message,
 	
 	struct storage_info_t* ds = vobj->vstore; 
 
-	ds->vinf.text.raw = renderfun_renderfmtstr(
+	ds->vinf.text.raw = arcan_renderfun_renderfmtstr(
 		message, line_spacing, tab_spacing,
 		tabs, true, n_lines, lineheights,  
 		&ds->w, &ds->h, &ds->vinf.text.s_raw, &maxw, &maxh
