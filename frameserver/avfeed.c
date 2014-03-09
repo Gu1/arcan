@@ -24,6 +24,8 @@
 #include <errno.h>
 
 #include <arcan_shmif.h>
+#include "arcan_ttf.h"
+#include "arcan_renderfun.h"
 #include "frameserver.h"
 
 #include <sys/types.h>
@@ -41,12 +43,13 @@
 #endif
 
 static struct {
+	pid_t pid;
+
+/* shmif members */
 	struct arcan_shmif_cont shmcont;
 	struct arcan_evctx inevq;
 	struct arcan_evctx outevq;
-
-	pid_t pid;
-	
+	uint8_t* vidp, (* audp);
 } term_ctx;
 
 void setup_shell(const char* type, char** opt_cmd)
@@ -111,9 +114,45 @@ void setup_shmterm(struct arg_arr* inargs, const char* keyfile)
 		LOG("failed to setup shmpage rendering, requested: %d, %d\n",
 			desw, desh);
 	}
+
+	TTF_Init();
+
+	arcan_shmif_calcofs(term_ctx.shmcont.addr,&(term_ctx.vidp),&(term_ctx.audp));	
+
+	unsigned int n_lines;
+	unsigned short dw, dh;
+	int maxw, maxh;
+	uint32_t dsz;
+	char* srcbuf = arcan_renderfun_renderfmtstr(
+		"\\fdefault.ttf,18 Hello (terminal) World", 4, 8, NULL,
+		false, &n_lines, NULL, &dw, &dh, &dsz, &maxw, &maxh);
+
+#define RGBA(R, G, B, A) ((A << 24) || (B << 16) || (G << 8) || R);
+	uint32_t* cur = (uint32_t*) term_ctx.vidp;
+	for (int row = 0; row < desh; row++)
+		for (int col = 0; col < desw; col++)
+			*cur++ = RGBA(0xaa, 0xbb, 0, 0xff);
+
+	arcan_shmif_signal(&term_ctx.shmcont, SHMIF_SIGVID);
 /*
  * default resolution, font etc. as possible args 
  */ 
+}
+
+void process_inevq()
+{
+	arcan_event ev;
+
+	while(arcan_event_poll(&term_ctx.inevq, &ev) == 1){
+		LOG("event\n");
+		switch(ev.category){
+		case EVENT_IO:
+		break;
+
+		case EVENT_TARGET:
+		break;
+		}
+	}
 }
 
 void arcan_frameserver_avfeed_run(const char* resource, const char* keyfile)
@@ -162,14 +201,18 @@ void arcan_frameserver_avfeed_run(const char* resource, const char* keyfile)
 		setup_shmterm(args, keyfile);
 	}
 
-/*
- * use the parent socket as a trigger for sweeping
- * the event queue, 
- */	
+/* 
+ * the sockin is a stream socket that (for now) is only used
+ * to transfer file descriptors and as a select target that there are 
+ * events pending in the event queue (as multiplexing with 
+ * futexes etc. becomes messy quick)
+ */
+	int sockin_fd = strtol( getenv("ARCAN_SOCKIN_FD"), NULL, 10 );
 	fd_set rfd;
 	while(1){
 		FD_ZERO(&rfd);
 		FD_SET(master, &rfd);
+		FD_SET(sockin_fd, &rfd);
 
 		LOG("selecting\n");
 		if (select(1, &rfd, NULL, NULL, tv) < 0){
@@ -180,7 +223,10 @@ void arcan_frameserver_avfeed_run(const char* resource, const char* keyfile)
 		}
 		
 		if (FD_ISSET(master, &rfd)){
-			
+			LOG("event in shell\n");	
 		}
+
+		if (FD_ISSET(sockin_fd, &rfd))
+			process_inevq();	
 	}	
 }
