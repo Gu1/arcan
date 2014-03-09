@@ -22,6 +22,8 @@ ${PLATFORM_PATH}/sem.c
 ${PLATFORM_PATH}/shm.c
 )
 
+add_definitions(-D_LINUX)
+
 if (VIDEO_PLATFORM STREQUAL "egl")
 
 # detect broadcom (rpi) etc. and add appropriate flags

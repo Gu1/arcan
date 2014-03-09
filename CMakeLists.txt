@@ -268,6 +268,7 @@ set (
  engine/arcan_db.c
  engine/arcan_video.c
  engine/arcan_renderfun.c
+ engine/arcan_renderfun.h
  engine/arcan_shdrmgmt.c
  engine/arcan_3dbase.c
  engine/arcan_math.c
@@ -386,6 +387,14 @@ endif()
 # AVfeed is a convenience- mapped input skeleton frameserver
 # for hooking up custom input sources
 #
+set (AVFEED_SOURCES
+	frameserver/avfeed.c
+)
+
+set (AVFEED_LIBS
+	util
+)
+
 if (AVFEED_SOURCES)
 	list(APPEND FSRV_AVFEED_SOURCES ${AVFEED_SOURCES})
 	list(APPEND FSRV_AVFEED_LIBRARIES ${AVFEED_LIBS})
